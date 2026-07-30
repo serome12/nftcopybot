@@ -1,0 +1,14 @@
+{
+  "name": "nft-copy-bot",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "bot.js",
+  "scripts": {
+    "start": "node bot.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "ethers": "^6.13.0",
+    "node-telegram-bot-api": "^0.66.0"
+  }
+}
