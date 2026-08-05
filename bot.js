@@ -1,11 +1,20 @@
 import { ethers } from "ethers";
 import dotenv from "dotenv";
 import TelegramBot from "node-telegram-bot-api";
+import http from "http";
 
 dotenv.config();
 
+// Dummy HTTP server to satisfy Render Free Web Service port binding requirements
+const PORT = process.env.PORT || 10000;
+http.createServer((req, res) => {
+  res.writeHead(200, { "Content-Type": "text/plain" });
+  res.end("NFT Copy Bot is running live!\n");
+}).listen(PORT, () => {
+  console.log(`🌐 Health check server listening on port ${PORT}`);
+});
+
 const WS_RPC_URL = process.env.WS_RPC_URL;
-// Parse comma-separated target wallets into a lowercase Set for fast lookups
 const TARGET_WALLETS = new Set(
   process.env.TARGET_WALLET?.split(",").map((addr) => addr.trim().toLowerCase())
 );
@@ -41,7 +50,6 @@ function startWebSocketMonitor() {
       if (!block || !block.prefetchedTransactions) return;
 
       for (const tx of block.prefetchedTransactions) {
-        // Check if the sender matches any tracked wallet
         if (tx.from && TARGET_WALLETS.has(tx.from.toLowerCase())) {
           const ethSent = ethers.formatEther(tx.value);
           const receipt = await provider.getTransactionReceipt(tx.hash);
