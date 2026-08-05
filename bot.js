@@ -1,11 +1,11 @@
 import { ethers } from "ethers";
 import dotenv from "dotenv";
 import TelegramBot from "node-telegram-bot-api";
-import http from "http";
+import http from "node:http";
 
 dotenv.config();
 
-// Dummy HTTP server to satisfy Render Free Web Service port binding requirements
+// Dummy HTTP server to satisfy Render Free Web Service health checks
 const PORT = process.env.PORT || 10000;
 http.createServer((req, res) => {
   res.writeHead(200, { "Content-Type": "text/plain" });
@@ -63,14 +63,9 @@ function startWebSocketMonitor() {
     }
   });
 
-  provider._websocket.on("close", () => {
-    console.warn(`⚠️ Connection lost. Reconnecting in 5s...`);
-    provider.destroy();
+  provider.on("error", (err) => {
+    console.error("⚠️ Provider WebSocket error:", err.message || err);
     setTimeout(startWebSocketMonitor, 5000);
-  });
-
-  provider._websocket.on("error", (err) => {
-    console.error("⚠️ WebSocket error:", err.message);
   });
 }
 
