@@ -5,7 +5,16 @@ import http from "node:http";
 
 dotenv.config();
 
-// Dummy HTTP server to satisfy Render Free Web Service health checks
+// Prevent process crashes on unhandled WebSocket/network errors
+process.on("uncaughtException", (err) => {
+  console.error("⚠️ Uncaught Exception caught:", err.message || err);
+});
+
+process.on("unhandledRejection", (reason) => {
+  console.error("⚠️ Unhandled Rejection caught:", reason);
+});
+
+// Dummy HTTP server for Render Free Web Service health checks
 const PORT = process.env.PORT || 10000;
 http.createServer((req, res) => {
   res.writeHead(200, { "Content-Type": "text/plain" });
@@ -42,31 +51,37 @@ async function sendTelegramAlert(message) {
 
 function startWebSocketMonitor() {
   console.log(`🔌 Monitoring ${TARGET_WALLETS.size} target wallet(s)...`);
-  const provider = new ethers.WebSocketProvider(WS_RPC_URL);
+  
+  try {
+    const provider = new ethers.WebSocketProvider(WS_RPC_URL);
 
-  provider.on("block", async (blockNumber) => {
-    try {
-      const block = await provider.getBlock(blockNumber, true);
-      if (!block || !block.prefetchedTransactions) return;
+    provider.on("block", async (blockNumber) => {
+      try {
+        const block = await provider.getBlock(blockNumber, true);
+        if (!block || !block.prefetchedTransactions) return;
 
-      for (const tx of block.prefetchedTransactions) {
-        if (tx.from && TARGET_WALLETS.has(tx.from.toLowerCase())) {
-          const ethSent = ethers.formatEther(tx.value);
-          const receipt = await provider.getTransactionReceipt(tx.hash);
-          if (receipt) {
-            parseLogsAndAlert(tx, receipt, ethSent);
+        for (const tx of block.prefetchedTransactions) {
+          if (tx.from && TARGET_WALLETS.has(tx.from.toLowerCase())) {
+            const ethSent = ethers.formatEther(tx.value);
+            const receipt = await provider.getTransactionReceipt(tx.hash);
+            if (receipt) {
+              parseLogsAndAlert(tx, receipt, ethSent);
+            }
           }
         }
+      } catch (error) {
+        console.error("Error processing block:", error.message);
       }
-    } catch (error) {
-      console.error("Error processing block:", error.message);
-    }
-  });
+    });
 
-  provider.on("error", (err) => {
-    console.error("⚠️ Provider WebSocket error:", err.message || err);
+    provider.on("error", (err) => {
+      console.error("⚠️ Provider WebSocket error:", err.message || err);
+      setTimeout(startWebSocketMonitor, 5000);
+    });
+  } catch (err) {
+    console.error("⚠️ Failed to initialize WebSocket provider:", err.message);
     setTimeout(startWebSocketMonitor, 5000);
-  });
+  }
 }
 
 function parseLogsAndAlert(tx, receipt, ethSent) {
