@@ -1,7 +1,7 @@
 import { ethers } from "ethers";
 import dotenv from "dotenv";
 import TelegramBot from "node-telegram-bot-api";
-import http from "node-http";
+import http from "http";
 
 dotenv.config();
 
