@@ -70,12 +70,14 @@ async function startWebSocketMonitor() {
 
             const valueEth = ethers.formatEther(tx.value || 0);
             const explorerUrl = `https://robinhoodchain.blockscout.com/tx/${tx.hash}`;
+            const openseaProfileUrl = `https://opensea.io/${tx.from}`;
 
             const message = `🚨 **ROBINHOOD L2 ACTIVITY DETECTED** 🚨\n\n` +
               `**Wallet:** \`${tx.from}\`\n` +
               `**Value:** ${valueEth} ETH\n` +
               `**To:** \`${tx.to || "Contract Deployment / Mint"}\`\n\n` +
-              `🔗 [View Tx on Blockscout](${explorerUrl})`;
+              `🔗 [View Tx on Blockscout](${explorerUrl})\n` +
+              `⛵ [OpenSea Profile](${openseaProfileUrl})`;
 
             await bot.sendMessage(CHAT_ID, message, {
               parse_mode: "Markdown",
